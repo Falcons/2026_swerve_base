@@ -94,6 +94,10 @@ public class SwerveSubsystem extends SubsystemBase {
     swerveDrive.setMotorIdleMode(brake);
   }
 
+  public void stop(){
+    swerveDrive.drive(new ChassisSpeeds(0, 0, 0));
+  }
+
   /**
    * Gets the swerve drive object.
    *
