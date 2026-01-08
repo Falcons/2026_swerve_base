@@ -32,7 +32,7 @@ public class SwerveSubsystem extends SubsystemBase {
 
     try {
       // try to create a new swerve drive
-      swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(DriveConstants.maxSpeedMPS);
+      swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(DriveConstants.maxSpeedMPS, DriveConstants.startingPose);
       // Alternative method if you don't want to supply the conversion factor via JSON files.
       // swerveDrive = new SwerveParser(directory).createSwerveDrive(maximumSpeed, angleConversionFactor, driveConversionFactor);
     } catch (Exception e) {
@@ -153,5 +153,9 @@ public class SwerveSubsystem extends SubsystemBase {
     return run(() -> {
       swerveDrive.driveFieldOriented(velocity.get());
     });
+  }
+
+  public void zeroGyro() {
+    swerveDrive.zeroGyro();
   }
 }
