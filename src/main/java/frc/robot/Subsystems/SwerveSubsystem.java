@@ -9,9 +9,11 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
 import frc.robot.Constants.DriveConstants;
 
 import java.io.File;
+import java.util.function.DoubleSupplier;
 import java.util.function.Supplier;
 
 import edu.wpi.first.wpilibj.Filesystem;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import swervelib.parser.SwerveDriveConfiguration;
 import swervelib.parser.SwerveParser;
 import swervelib.SwerveDrive;
@@ -42,7 +44,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-
+    SmartDashboard.putNumber("frontLeft encoder", swerveDrive.getModules()[0].getAbsolutePosition());
+    SmartDashboard.putNumber("frontRight encoder", swerveDrive.getModules()[1].getAbsolutePosition());
+    SmartDashboard.putNumber("backRight encoder", swerveDrive.getModules()[2].getAbsolutePosition());
+    SmartDashboard.putNumber("backLeft encoder", swerveDrive.getModules()[3].getAbsolutePosition());
   }
 
   public SwerveDrive getSwerveDrive() {
@@ -146,8 +151,13 @@ public class SwerveSubsystem extends SubsystemBase {
     return swerveDrive.getMaximumChassisVelocity();
   }
 
-  public void driveFieldOriented(ChassisSpeeds velocity) {
-     swerveDrive.driveFieldOriented(velocity);
+  /**
+   * Drive the robot given a chassis field oriented velocity.
+   * @param velocity Velocity according to the field.
+   */
+  public void driveFieldOriented(ChassisSpeeds velocity)
+  {
+    swerveDrive.driveFieldOriented(velocity);
   }
   public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity){
     return run(() -> {
@@ -157,5 +167,32 @@ public class SwerveSubsystem extends SubsystemBase {
 
   public void zeroGyro() {
     swerveDrive.zeroGyro();
+  }
+
+  /**
+   * Command to drive the robot using translative values and heading as a setpoint.
+   *
+   * @param translationX Translation in the X direction. Cubed for smoother controls.
+   * @param translationY Translation in the Y direction. Cubed for smoother controls.
+   * @param headingX     Heading X to calculate angle of the joystick.
+   * @param headingY     Heading Y to calculate angle of the joystick.
+   * @return Drive command.
+   */
+  public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier headingX,
+                              DoubleSupplier headingY)
+  {
+    // swerveDrive.setHeadingCorrection(true); // Normally you would want heading correction for this kind of control.
+    return run(() -> {
+
+      Translation2d scaledInputs = SwerveMath.scaleTranslation(new Translation2d(translationX.getAsDouble(),
+                                                                                 translationY.getAsDouble()), 0.8);
+
+      // Make the robot move
+      driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(scaledInputs.getX(), scaledInputs.getY(),
+                                                                      headingX.getAsDouble(),
+                                                                      headingY.getAsDouble(),
+                                                                      swerveDrive.getOdometryHeading().getRadians(),
+                                                                      swerveDrive.getMaximumChassisVelocity()));
+    });
   }
 }
