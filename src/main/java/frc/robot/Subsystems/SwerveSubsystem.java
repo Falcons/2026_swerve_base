@@ -10,7 +10,6 @@ import frc.robot.Constants.DriveConstants;
 
 import java.io.File;
 import java.util.function.DoubleSupplier;
-import java.util.function.Supplier;
 
 import edu.wpi.first.wpilibj.Filesystem;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -35,8 +34,6 @@ public class SwerveSubsystem extends SubsystemBase {
     try {
       // try to create a new swerve drive
       swerveDrive = new SwerveParser(swerveJsonDirectory).createSwerveDrive(DriveConstants.maxSpeedMPS, DriveConstants.startingPose);
-      // Alternative method if you don't want to supply the conversion factor via JSON files.
-      // swerveDrive = new SwerveParser(directory).createSwerveDrive(maximumSpeed, angleConversionFactor, driveConversionFactor);
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -44,10 +41,10 @@ public class SwerveSubsystem extends SubsystemBase {
 
   @Override
   public void periodic() {
-    SmartDashboard.putNumber("frontLeft encoder", swerveDrive.getModules()[0].getAbsolutePosition());
-    SmartDashboard.putNumber("frontRight encoder", swerveDrive.getModules()[1].getAbsolutePosition());
-    SmartDashboard.putNumber("backRight encoder", swerveDrive.getModules()[2].getAbsolutePosition());
-    SmartDashboard.putNumber("backLeft encoder", swerveDrive.getModules()[3].getAbsolutePosition());
+    SmartDashboard.putNumber("swerve/frontLeft encoder", swerveDrive.getModules()[0].getAbsolutePosition());
+    SmartDashboard.putNumber("swerve/frontRight encoder", swerveDrive.getModules()[1].getAbsolutePosition());
+    SmartDashboard.putNumber("swerve/backLeft encoder", swerveDrive.getModules()[2].getAbsolutePosition());
+    SmartDashboard.putNumber("swerve/backRight encoder", swerveDrive.getModules()[3].getAbsolutePosition());
   }
 
   public SwerveDrive getSwerveDrive() {
@@ -157,14 +154,11 @@ public class SwerveSubsystem extends SubsystemBase {
    */
   public void driveFieldOriented(ChassisSpeeds velocity)
   {
+    SmartDashboard.putNumber("desierd x", velocity.vxMetersPerSecond);
+    SmartDashboard.putNumber("desierd y", velocity.vyMetersPerSecond);
+    SmartDashboard.putNumber("desierd rot", velocity.omegaRadiansPerSecond);
     swerveDrive.driveFieldOriented(velocity);
   }
-  public Command driveFieldOriented(Supplier<ChassisSpeeds> velocity){
-    return run(() -> {
-      swerveDrive.driveFieldOriented(velocity.get());
-    });
-  }
-
   public void zeroGyro() {
     swerveDrive.zeroGyro();
   }
@@ -178,21 +172,35 @@ public class SwerveSubsystem extends SubsystemBase {
    * @param headingY     Heading Y to calculate angle of the joystick.
    * @return Drive command.
    */
-  public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier headingX,
-                              DoubleSupplier headingY)
-  {
-    // swerveDrive.setHeadingCorrection(true); // Normally you would want heading correction for this kind of control.
+  public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier headingX, DoubleSupplier headingY){
+    swerveDrive.setHeadingCorrection(true); // Normally you would want heading correction for this kind of control.
     return run(() -> {
-
-      Translation2d scaledInputs = SwerveMath.scaleTranslation(new Translation2d(translationX.getAsDouble(),
-                                                                                 translationY.getAsDouble()), 0.8);
-
+      Translation2d scaledInputs = SwerveMath.scaleTranslation(new Translation2d(translationX.getAsDouble(), translationY.getAsDouble()), 0.8);
       // Make the robot move
       driveFieldOriented(swerveDrive.swerveController.getTargetSpeeds(scaledInputs.getX(), scaledInputs.getY(),
-                                                                      headingX.getAsDouble(),
-                                                                      headingY.getAsDouble(),
-                                                                      swerveDrive.getOdometryHeading().getRadians(),
-                                                                      swerveDrive.getMaximumChassisVelocity()));
+        headingX.getAsDouble(),
+        headingY.getAsDouble(),
+        swerveDrive.getOdometryHeading().getRadians(),
+        swerveDrive.getMaximumChassisVelocity()));
+    });
+  }
+
+    /**
+   * Command to drive the robot using translative values and heading as a setpoint.
+   *
+   * @param translationX Translation in the X direction. Cubed for smoother controls.
+   * @param translationY Translation in the Y direction. Cubed for smoother controls.
+   * @param rotation     Angular velocity of the robot
+   * @return Drive command.
+   */
+  public Command driveCommand(DoubleSupplier translationX, DoubleSupplier translationY, DoubleSupplier rotation){
+    return run(() -> {
+
+    Translation2d scaledInputs = SwerveMath.scaleTranslation(new Translation2d(translationX.getAsDouble(),translationY.getAsDouble()), 0.8);
+    Double rotationValue = rotation.getAsDouble() * swerveDrive.getMaximumChassisAngularVelocity();
+
+    // Make the robot move
+    drive(scaledInputs, rotationValue, true);
     });
   }
 }

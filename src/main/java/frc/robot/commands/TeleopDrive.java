@@ -7,6 +7,7 @@ package frc.robot.commands;
 import java.util.function.BooleanSupplier;
 import java.util.function.DoubleSupplier;
 
+import edu.wpi.first.math.filter.SlewRateLimiter;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.wpilibj2.command.Command;
 import frc.robot.subsystems.SwerveSubsystem;
@@ -15,14 +16,16 @@ import frc.robot.subsystems.SwerveSubsystem;
 public class TeleopDrive extends Command {
   /** Creates a new TeleopDrivee. */
   private final SwerveSubsystem swerve;
-  private final DoubleSupplier  speedX, speedY, rot;
+  private final DoubleSupplier  controlX, controlY, rot;
+  private final SlewRateLimiter xSlewLimiter = new SlewRateLimiter(0.5);
+  private final SlewRateLimiter ySlewLimiter = new SlewRateLimiter(0.5);
   private final BooleanSupplier fieldRelative;
 
-  public TeleopDrive(SwerveSubsystem swerve, DoubleSupplier speedX, DoubleSupplier speedY, DoubleSupplier rot, BooleanSupplier fieldRelative) {
+  public TeleopDrive(SwerveSubsystem swerve, DoubleSupplier controlX, DoubleSupplier controlY, DoubleSupplier rot, BooleanSupplier fieldRelative) {
     // Use addRequirements() here to declare subsystem dependencies.
     this.swerve = swerve;
-    this.speedX = speedX;
-    this.speedY = speedY;
+    this.controlX = controlX;
+    this.controlY = controlY;
     this.rot = rot;
     this.fieldRelative = fieldRelative;
     addRequirements(swerve);
@@ -35,9 +38,12 @@ public class TeleopDrive extends Command {
   // Called every time the scheduler runs while the command is scheduled.
   @Override
   public void execute() {
+
+    double limitedXControl = xSlewLimiter.calculate(controlX.getAsDouble());
+    double limitedYcontrol = ySlewLimiter.calculate(controlY.getAsDouble());
     swerve.drive(new Translation2d(
-      speedY.getAsDouble() * swerve.getMaximumVelocity(),
-      speedX.getAsDouble() * swerve.getMaximumVelocity()),
+      limitedXControl  * swerve.getMaximumVelocity(),
+      limitedYcontrol  * swerve.getMaximumVelocity()),
       rot.getAsDouble() * swerve.getMaximumAngularVelocity(),
       fieldRelative.getAsBoolean());
   }

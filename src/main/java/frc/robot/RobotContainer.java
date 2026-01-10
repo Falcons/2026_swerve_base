@@ -40,33 +40,11 @@ public class RobotContainer {
       () -> MathUtil.applyDeadband(-driver.getLeftY(), ControllerConstants.deadBand), 
       () -> MathUtil.applyDeadband(-driver.getRightX(), ControllerConstants.deadBand), 
       () -> !driver.getHID().getLeftBumper()));
-    
-    // Command driveFieldOrientedDirectAngle = swerve.driveCommand(
-    //     () -> MathUtil.applyDeadband(driver.getLeftY(), ControllerConstants.deadBand),
-    //     () -> MathUtil.applyDeadband(driver.getLeftX(), ControllerConstants.deadBand),
-    //     () -> driver.getRightX(),
-    //     () -> driver.getRightY());
-        
-        // swerve.setDefaultCommand(driveFieldOrientedDirectAngle);
 
     // Configure the button bindings
     configureBindings();
   }
-
-  // // MOVEMENT IN ROBOT CONTAINER 
-  // // this is kept here for testing just in case the command based movment doesnt work
-  // SwerveInputStream driveAngularVelocity = SwerveInputStream.of(
-  //   swerve.getSwerveDrive(),() -> driver.getLeftY(), () -> driver.getLeftX())
-  //   .withControllerRotationAxis(driver::getRightX)
-  //   .deadband(ControllerConstants.deadBand).scaleTranslation(0.8).allianceRelativeControl(true);
-  // // a very weird turning where the angle is set by the controller directly?
-  // SwerveInputStream driveDirectAngle = driveAngularVelocity.copy().withControllerHeadingAxis(driver::getRightX, driver::getRightY)
-  //   .headingWhile(true);
-  // // command for that thingy
-  // Command driveFieldOrientedAngle = swerve.driveFieldOriented(driveDirectAngle);
-  // Command driveFieldOrientedAngularVelocity = swerve.driveFieldOriented(driveAngularVelocity);
-  // }
-
+  
   private void configureBindings() {
     driver.b().onTrue(new zeroGyro(swerve));
   }
